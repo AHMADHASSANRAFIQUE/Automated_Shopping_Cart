@@ -1,0 +1,560 @@
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import dayjs from 'dayjs';
+import apiStorage from '../services/apiStorage.js';
+import groceryIntelligence from '../services/groceryIntelligence.js';
+import logger from '../utils/logger.js';
+import useErrorHandler from './useErrorHandler.js';
+
+export const useGroceryList = (user) => {
+  const [allLists, setAllLists] = useState({});
+  const [currentDate, setCurrentDate] = useState(() => {
+    return dayjs().startOf('day');
+  });
+  const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [pendingCorrections, setPendingCorrections] = useState([]);
+  const [skippedDuplicates, setSkippedDuplicates] = useState([]);
+  
+  // Use centralized error handling
+  const { error, setError, clearError, handleAsyncOperation: _handleAsyncOperation } = useErrorHandler({
+    autoClearDelay: 8000 // Auto-clear errors after 8 seconds
+  });
+
+  // Get current list items
+  const currentDateString = currentDate.format('YYYY-MM-DD');
+  // Memoize currentItems so its reference is stable for callbacks
+  const currentItems = useMemo(() => allLists[currentDateString] || [], [allLists, currentDateString]);
+
+  // Process items with intelligent system
+  const processGroceryItem = useCallback((itemText) => {
+    return groceryIntelligence.processGroceryItem(itemText);
+  }, []);
+
+  // Check for duplicates
+  const isDuplicate = useCallback((itemText) => {
+    return currentItems.some(item =>
+      item.text.toLowerCase().trim() === itemText.toLowerCase().trim()
+    );
+  }, [currentItems]);
+
+  // Add items to list
+  const addItemsToList = useCallback(async (newItems, skipCorrection = false) => {
+    if (!user?._id) {return;}
+
+    try {
+      // Validate user permission
+      if (!user || !user._id) {
+        throw new Error('User not authenticated');
+      }
+
+      // Check if trying to add items to a past date
+      const today = dayjs().startOf('day');
+      if (currentDate.isBefore(today)) {
+        throw new Error('Cannot add items to past dates. Please select today or a future date.');
+      }
+    } catch (error) {
+      setError(error.message);
+      return;
+    }
+
+    setLoading(true);
+    const corrections = [];
+    const duplicates = [];
+
+    try {
+      for (const item of newItems) {
+        // Process item with intelligent system
+        const processed = processGroceryItem(item);
+
+        // If correction was made and we haven't skipped correction, ask user
+        if (processed.wasCorreted && !skipCorrection) {
+          corrections.push({
+            original: processed.originalText,
+            corrected: processed.correctedText,
+            category: processed.category
+          });
+          continue; // Don't add yet, wait for user confirmation
+        }
+
+        // Check for duplicates
+        const finalText = skipCorrection ? processed.originalText : processed.correctedText;
+        if (isDuplicate(finalText)) {
+          duplicates.push(finalText);
+          continue;
+        }
+
+        const itemData = {
+          text: finalText,
+          category: processed.category,
+          completed: false,
+          count: 1
+        };
+
+        const result = await apiStorage.addGroceryItem(user._id, currentDateString, itemData);
+        if (result.success) {
+          setAllLists(prev => ({
+            ...prev,
+            [currentDateString]: result.list.items
+          }));
+        } else {
+          setError(result.error || 'Failed to add item');
+        }
+      }
+
+      // Show corrections dialog if any
+      if (corrections.length > 0) {
+        setPendingCorrections(corrections);
+      }
+
+      // Show duplicate info if any
+      if (duplicates.length > 0) {
+        setSkippedDuplicates(duplicates);
+        setTimeout(() => setSkippedDuplicates([]), 3000); // Clear after 3 seconds
+      }
+
+    } catch (error) {
+      logger.error('Error adding items:', error);
+      setError('Failed to add items. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDateString, processGroceryItem, user, isDuplicate, setError]);
+
+  // Handle correction acceptance
+  const acceptCorrections = useCallback(async () => {
+    setLoading(true);
+    try {
+      for (const correction of pendingCorrections) {
+        // Check for duplicates before adding
+        if (isDuplicate(correction.corrected)) {
+          logger.groceryList(`Skipping duplicate item: ${correction.corrected}`);
+          continue;
+        }
+
+        const itemData = {
+          text: correction.corrected,
+          category: correction.category,
+          completed: false
+        };
+
+        const result = await apiStorage.addGroceryItem(user._id, currentDateString, itemData);
+        if (result.success) {
+          setAllLists(prev => ({
+            ...prev,
+            [currentDateString]: result.list.items
+          }));
+        } else {
+          setError(result.error || 'Failed to add item');
+        }
+      }
+    } catch (error) {
+      logger.error('Error adding corrected items:', error);
+      setError('Failed to add corrected items');
+    } finally {
+      setLoading(false);
+      setPendingCorrections([]);
+    }
+  }, [pendingCorrections, user, currentDateString, isDuplicate, setError]);
+
+  // Handle correction rejection (use original)
+  const rejectCorrections = useCallback(async () => {
+    setLoading(true);
+    try {
+      for (const correction of pendingCorrections) {
+        // Check for duplicates before adding
+        if (isDuplicate(correction.original)) {
+          logger.groceryList(`Skipping duplicate item: ${correction.original}`);
+          continue;
+        }
+
+        // Process the original item without correction
+        const processed = processGroceryItem(correction.original);
+        const itemData = {
+          text: correction.original, // Use original text, not corrected
+          category: processed.category, // But use intelligent categorization
+          completed: false
+        };
+
+        const result = await apiStorage.addGroceryItem(user._id, currentDateString, itemData);
+        if (result.success) {
+          setAllLists(prev => ({
+            ...prev,
+            [currentDateString]: result.list.items
+          }));
+        } else {
+          setError(result.error || 'Failed to add item');
+        }
+      }
+    } catch (error) {
+      logger.error('Error adding original items:', error);
+      setError('Failed to add items. Please try again.');
+    } finally {
+      setLoading(false);
+      setPendingCorrections([]);
+    }
+  }, [pendingCorrections, user, currentDateString, isDuplicate, processGroceryItem, setError]);
+
+  // Toggle item completion
+  const toggleItem = useCallback(async (id) => {
+    logger.groceryList('Toggle item requested:', id);
+
+    if (!user?._id) {
+      logger.error('Toggle item: User not authenticated');
+      setError('User not authenticated. Please log in again.');
+      return;
+    }
+
+    const item = currentItems.find(item => item.id === id);
+    if (!item) {
+      logger.error('Toggle item: Item not found:', id);
+      setError('Item not found. Please refresh the page.');
+      return;
+    }
+
+    logger.groceryList('Toggling item:', {
+      id,
+      text: item.text,
+      currentCompleted: item.completed,
+      willBeCompleted: !item.completed
+    });
+
+    setLoading(true);
+    try {
+      const result = await apiStorage.updateGroceryItem(
+        user._id,
+        currentDateString,
+        id,
+        { completed: !item.completed }
+      );
+
+      logger.groceryList('Toggle item API response:', result);
+
+      if (result.success) {
+        setAllLists(prev => ({
+          ...prev,
+          [currentDateString]: result.list.items
+        }));
+        logger.groceryList('Item toggled successfully:', id);
+      } else {
+        logger.error('Toggle item API error:', result.error);
+        setError(result.error || 'Failed to update item');
+      }
+    } catch (error) {
+      logger.error('Error toggling item:', error);
+      setError('Failed to update item. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, currentDateString, currentItems, setError]);
+
+  // Remove item
+  const removeItem = useCallback(async (id) => {
+    if (!user?._id) {return;}
+    
+    setLoading(true);
+    try {
+      const result = await apiStorage.removeGroceryItem(user._id, currentDateString, id);
+      
+      if (result.success) {
+        setAllLists(prev => ({
+          ...prev,
+          [currentDateString]: result.list.items
+        }));
+      } else {
+        setError(result.error || 'Failed to remove item');
+      }
+    } catch (error) {
+      logger.error('Error removing item:', error);
+      setError('Failed to remove item. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, currentDateString, setError]);
+
+  // Update item category
+  const updateItemCategory = useCallback(async (id, newCategory) => {
+    if (!user?._id) {return;}
+
+    setLoading(true);
+    try {
+      const result = await apiStorage.updateGroceryItem(
+        user._id,
+        currentDateString,
+        id,
+        { category: newCategory }
+      );
+
+      if (result.success) {
+        setAllLists(prev => ({
+          ...prev,
+          [currentDateString]: result.list.items
+        }));
+      } else {
+        setError(result.error || 'Failed to update category');
+      }
+    } catch (error) {
+      logger.error('Error updating category:', error);
+      setError('Failed to update category. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, currentDateString, setError]);
+
+  // Update item text
+  const updateItemText = useCallback(async (id, newText) => {
+    if (!user?._id) {return;}
+
+    // Validate new text
+    if (!newText || newText.trim().length === 0) {
+      setError('Item text cannot be empty');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Process the new text to get the correct category
+      const processed = processGroceryItem(newText.trim());
+
+      // Update both text and category
+      const result = await apiStorage.updateGroceryItem(
+        user._id,
+        currentDateString,
+        id,
+        {
+          text: newText.trim(),
+          category: processed.category
+        }
+      );
+
+      if (result.success) {
+        setAllLists(prev => ({
+          ...prev,
+          [currentDateString]: result.list.items
+        }));
+        logger.groceryList(`Item updated and re-categorized to: ${processed.category}`);
+      } else {
+        setError(result.error || 'Failed to update item');
+      }
+    } catch (error) {
+      logger.error('Error updating item text:', error);
+      setError('Failed to update item. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, currentDateString, processGroceryItem, setError]);
+
+  // Update item count
+  const updateItemCount = useCallback(async (id, newCount) => {
+    if (!user?._id) {return;}
+
+    // Validate new count
+    const countNum = parseInt(newCount, 10);
+    if (isNaN(countNum) || countNum < 1) {
+      setError('Count must be at least 1');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await apiStorage.updateGroceryItem(
+        user._id,
+        currentDateString,
+        id,
+        { count: countNum }
+      );
+
+      if (result.success) {
+        setAllLists(prev => ({
+          ...prev,
+          [currentDateString]: result.list.items
+        }));
+        logger.groceryList(`Item count updated to: ${countNum}`);
+      } else {
+        setError(result.error || 'Failed to update count');
+      }
+    } catch (error) {
+      logger.error('Error updating item count:', error);
+      setError('Failed to update count. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, currentDateString, setError]);
+
+  // Clear current list
+  const clearCurrentList = useCallback(async () => {
+    if (!user?._id) {return;}
+    
+    setLoading(true);
+    try {
+      const result = await apiStorage.clearGroceryList(user._id, currentDateString);
+      
+      if (result.success) {
+        setAllLists(prev => ({
+          ...prev,
+          [currentDateString]: []
+        }));
+      } else {
+        setError(result.error || 'Failed to clear list');
+      }
+    } catch (error) {
+      logger.error('Error clearing list:', error);
+      setError('Failed to clear list. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, currentDateString, setError]);
+
+  // Delete list
+  const deleteList = useCallback(async (date) => {
+    if (!user?._id) {return;}
+    
+    setLoading(true);
+    try {
+      const result = await apiStorage.deleteGroceryList(user._id, date);
+      
+      if (result.success) {
+        setAllLists(prev => {
+          const newLists = { ...prev };
+          delete newLists[date];
+          return newLists;
+        });
+        
+        // If we deleted the current list, switch to today
+        if (date === currentDateString) {
+          const today = new Date();
+          setCurrentDate(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
+        }
+      } else {
+        setError(result.error || 'Failed to delete list');
+      }
+    } catch (error) {
+      logger.error('Error deleting list:', error);
+      setError('Failed to delete list. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, currentDateString, setError]);
+  // include setError for stable reference
+
+  // Load user's grocery lists on component mount and when user changes
+  useEffect(() => {
+    const loadUserLists = async () => {
+      if (!user?._id) {return;}
+
+      setDataLoading(true);
+      try {
+        // Load all user lists
+        const result = await apiStorage.getUserGroceryLists(user._id);
+        if (result.success) {
+          const listsMap = {};
+          const today = dayjs().startOf('day');
+          const emptyPastLists = []; // Track empty lists from past dates to delete
+
+          result.lists.forEach(list => {
+            const listDate = dayjs(list.date);
+            const isEmpty = !list.items || list.items.length === 0;
+            const isPastDate = listDate.isBefore(today, 'day');
+
+            // If the list is empty and from a past date, mark it for deletion
+            if (isEmpty && isPastDate) {
+              emptyPastLists.push(list.date);
+              logger.groceryList(`Marking empty past list for cleanup: ${list.date}`);
+            } else {
+              // Only keep non-empty lists or lists for today/future
+              listsMap[list.date] = list.items;
+            }
+          });
+
+          setAllLists(listsMap);
+
+          // Auto-cleanup empty past lists
+          if (emptyPastLists.length > 0) {
+            logger.groceryList(`Auto-cleaning ${emptyPastLists.length} empty past list(s)`);
+            // Delete empty past lists in the background
+            emptyPastLists.forEach(async (date) => {
+              try {
+                await apiStorage.deleteGroceryList(user._id, date);
+                logger.groceryList(`Successfully cleaned up empty list: ${date}`);
+              } catch (error) {
+                logger.error(`Failed to cleanup empty list ${date}:`, error);
+              }
+            });
+          }
+        } else {
+          setError(result.error || 'Failed to load grocery lists');
+        }
+      } catch (error) {
+        logger.error('Error loading lists:', error);
+        setError('Failed to load grocery lists. Please try again.');
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    loadUserLists();
+  }, [user, setError]);
+  
+  // Load current date list if it doesn't exist
+  useEffect(() => {
+    const loadCurrentList = async () => {
+      if (!user?._id || allLists[currentDateString]) {return;}
+      
+      try {
+        const result = await apiStorage.getGroceryListByDate(user._id, currentDateString);
+        if (result.success) {
+          setAllLists(prev => ({
+            ...prev,
+            [currentDateString]: result.list.items
+          }));
+        }
+      } catch (error) {
+        logger.error('Error loading current list:', error);
+      }
+    };
+    
+    loadCurrentList();
+  }, [currentDateString, user, allLists]);
+
+  // Get all historical items for autosuggest
+  const historicalItems = useMemo(() => {
+    const itemsSet = new Set();
+    Object.values(allLists).forEach(items => {
+      if (Array.isArray(items)) {
+        items.forEach(item => {
+          if (item.text) {
+            itemsSet.add(item.text);
+          }
+        });
+      }
+    });
+    return Array.from(itemsSet).sort();
+  }, [allLists]);
+
+  return {
+    allLists,
+    historicalItems,
+    currentDate,
+    setCurrentDate,
+    currentDateString,
+    currentItems,
+    loading,
+    dataLoading,
+    pendingCorrections,
+    setPendingCorrections,
+    skippedDuplicates,
+    error,
+    setError,
+    clearError,
+    addItemsToList,
+    acceptCorrections,
+    rejectCorrections,
+    toggleItem,
+    removeItem,
+    updateItemCategory,
+    updateItemText,
+    updateItemCount,
+    clearCurrentList,
+    deleteList,
+  };
+};

@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npm start)",
+      "Bash(mv:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)",
+      "Bash(rm:*)",
+      "Bash(true)",
+      "Bash(pnpm:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(cat:*)",
+      "WebSearch",
+      "Bash(if [ -f .env ])",
+      "Bash(then cat .env)",
+      "Bash(fi)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(if [ -f backend/.env ])",
+      "Bash(then cat backend/.env)",
+      "Bash(timeout 15 pnpm lint:frontend)",
+      "Bash(npx eslint:*)"
+    ],
+    "deny": []
+  }
+}

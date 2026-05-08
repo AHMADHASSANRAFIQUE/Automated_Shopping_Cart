@@ -1,0 +1,7 @@
+crewai
+playwright
+litellm
+python-dotenv
+fastapi
+uvicorn
+beautifulsoup4
