@@ -68,17 +68,29 @@ const ShoppingStatus = ({ active }) => {
         backdropFilter: 'blur(10px)',
       }}
     >
-      <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: '1px solid', borderColor: 'divider' }}>
+      <Box sx={{ 
+        p: 2, 
+        bgcolor: status.requires_action ? alpha(theme.palette.error.main, 0.1) : alpha(theme.palette.primary.main, 0.05), 
+        borderBottom: '1px solid', 
+        borderColor: status.requires_action ? 'error.main' : 'divider' 
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-          {status.is_running ? (
+          {status.requires_action ? (
+            <AlertCircle size={20} color={theme.palette.error.main} className="animate-pulse" />
+          ) : status.is_running ? (
             <Loader2 className="animate-spin" size={20} color={theme.palette.primary.main} />
           ) : (
             <CheckCircle2 size={20} color={theme.palette.success.main} />
           )}
-          <Typography variant="subtitle1" fontWeight={700}>
-            {status.is_running ? "AI Agent Shopping..." : "Shopping Complete"}
+          <Typography variant="subtitle1" fontWeight={700} color={status.requires_action ? 'error.main' : 'inherit'}>
+            {status.requires_action ? "Action Required!" : status.is_running ? "AI Agent Shopping..." : "Shopping Complete"}
           </Typography>
         </Box>
+        {status.requires_action && (
+          <Typography variant="caption" fontWeight={700} sx={{ display: 'block', mb: 1, color: 'error.main' }}>
+            Please solve the Captcha in the browser window to continue.
+          </Typography>
+        )}
         <LinearProgress 
           variant="determinate" 
           value={status.total_items > 0 ? (status.progress / status.total_items) * 100 : 0} 

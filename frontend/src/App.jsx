@@ -76,8 +76,10 @@ import CongratulationsDialog from './components/CongratulationsDialog';
 import ErrorBoundary from './components/ErrorBoundary';
 import ReceiptsPage from './pages/ReceiptsPage';
 import LandingPage from './pages/LandingPage';
+import HistoryPage from './pages/HistoryPage';
 import StoreSelection from './components/StoreSelection';
 import ShoppingStatus from './components/ShoppingStatus';
+import HandoverDialog from './components/HandoverDialog';
 import { useGroceryList } from './hooks/useGroceryList';
 import groceryIntelligence from './services/groceryIntelligence';
 import { downloadListAsImage, downloadListAsPDF, shareList } from './utils/downloadList';
@@ -175,6 +177,7 @@ const VoiceGroceryList = ({ user, logout }) => {
   const [settingsMenuAnchor, setSettingsMenuAnchor] = useState(null);
   const [isStoreSelectorOpen, setIsStoreSelectorOpen] = useState(false);
   const [isShoppingActive, setIsShoppingActive] = useState(false);
+  const [vendorForHandover, setVendorForHandover] = useState(null);
 
   // Ref for the printable list component
   const printableListRef = useRef(null);
@@ -417,9 +420,16 @@ const VoiceGroceryList = ({ user, logout }) => {
    * Handle vendor selection from StoreSelection modal
    * @param {Object} vendor - The selected vendor object
    */
-  const handleVendorSelect = async (vendor) => {
+  const handleVendorSelect = (vendor) => {
     setIsStoreSelectorOpen(false);
-    console.log(`🚀 Triggering AI Agent for ${vendor.name}...`);
+    setVendorForHandover(vendor); // Show the handover dialog first
+  };
+
+  const executeHandover = async () => {
+    const vendor = vendorForHandover;
+    setVendorForHandover(null);
+    
+    console.log(`🚀 Executing Handover for ${vendor.name}...`);
     
     // Phase 4: Persist the shopping session for history/analytics
     try {
@@ -436,7 +446,6 @@ const VoiceGroceryList = ({ user, logout }) => {
       }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      console.log("💾 Session persisted to history");
     } catch (err) {
       console.error("⚠️ Failed to persist session history:", err);
     }
@@ -450,14 +459,11 @@ const VoiceGroceryList = ({ user, logout }) => {
       });
       
       if (response.data.success) {
-        console.log("✅ AI Agent started successfully");
         setIsShoppingActive(true);
-        // Open the vendor site in a new tab as well so user can watch/interact
         window.open(vendor.affiliateUrl, '_blank');
       }
     } catch (error) {
       console.error("❌ Failed to trigger AI Agent:", error);
-      // Fallback: Just open the link if AI service is down
       window.open(vendor.affiliateUrl, '_blank');
     }
   };
@@ -871,6 +877,20 @@ const VoiceGroceryList = ({ user, logout }) => {
                   }}
                 />
               )}
+
+              <Button
+                variant={activeView === 'history' ? 'contained' : 'outlined'}
+                size="small"
+                startIcon={<History fontSize="small" />}
+                onClick={() => setActiveView(activeView === 'history' ? 'lists' : 'history')}
+                sx={{
+                  textTransform: 'none',
+                  borderRadius: 9999,
+                  mr: 2
+                }}
+              >
+                {activeView === 'history' ? 'Back to Lists' : 'History'}
+              </Button>
 
               <Button
                 variant={isReceiptsView ? 'contained' : 'outlined'}
@@ -1322,6 +1342,8 @@ const VoiceGroceryList = ({ user, logout }) => {
                 onItemsDetected={handleVoiceItems}
                 disabled={loading || currentDate.isBefore(dayjs().startOf('day'))}
               />
+              {activeView === 'receipts' && <ReceiptsPage />}
+              {activeView === 'history' && <HistoryPage />}
 
               {/* Store Selection Modal */}
               <StoreSelection 
@@ -1333,6 +1355,13 @@ const VoiceGroceryList = ({ user, logout }) => {
 
               {/* Real-time Shopping Status Widget */}
               <ShoppingStatus active={isShoppingActive} />
+
+              {/* Phase 4: Guided Handover Dialog */}
+              <HandoverDialog 
+                open={!!vendorForHandover} 
+                vendor={vendorForHandover} 
+                onConfirm={executeHandover} 
+              />
             </>
           )}
         </Box>
