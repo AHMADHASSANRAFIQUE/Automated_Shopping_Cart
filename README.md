@@ -24,6 +24,18 @@ graph TD
 
 ---
 
+## 🏃 How It Works (The Execution Flow)
+
+The platform operates through a synchronized 5-step process to ensure a seamless "Voice-to-Cart" experience:
+
+1.  **Voice/Text Capture**: User provides a raw list via the React frontend.
+2.  **AI Intelligence (Pillar 1)**: The list is sent to the **FastAPI service**, where **Gemini 3 Flash** parses it into a structured shopping specification (e.g., "milk" -> `{ "name": "Whole Milk", "qty": 1 }`).
+3.  **Store Selection & Affiliate Routing**: User selects a store (e.g., Instacart -> Publix). The system generates a tracking affiliate link and saves the session metadata to **MongoDB**.
+4.  **Autonomous Shopping (Pillar 2)**: The **Playwright Agent** launches a stealth browser, navigates to the store, searches for each item, and adds them to the cart in real-time.
+5.  **Secure Handover**: Once the AI finishes, the user is redirected to the vendor's site in a new tab to perform the final secure checkout using their own saved payment methods.
+
+---
+
 ## 🛠️ Core Pillars of Implementation
 
 ### 1. The Intelligence Engine (Pillar 1)
