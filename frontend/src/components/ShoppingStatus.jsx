@@ -36,7 +36,7 @@ const ShoppingStatus = ({ active }) => {
     if (active) {
       interval = setInterval(async () => {
         try {
-          const response = await axios.get('http://localhost:8000/agent/status');
+          const response = await axios.get('https://ahmadhossan-florland-ai-agent.hf.space/agent/status');
           setStatus(response.data);
           if (!response.data.is_running && response.data.progress > 0) {
             clearInterval(interval);

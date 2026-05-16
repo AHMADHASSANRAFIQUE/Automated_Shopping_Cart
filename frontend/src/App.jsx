@@ -428,9 +428,9 @@ const VoiceGroceryList = ({ user, logout }) => {
   const executeHandover = async () => {
     const vendor = vendorForHandover;
     setVendorForHandover(null);
-    
+
     console.log(`🚀 Executing Handover for ${vendor.name}...`);
-    
+
     // Phase 4: Persist the shopping session for history/analytics
     try {
       await axios.post('http://localhost:3001/api/sessions', {
@@ -449,15 +449,15 @@ const VoiceGroceryList = ({ user, logout }) => {
     } catch (err) {
       console.error("⚠️ Failed to persist session history:", err);
     }
-    
+
     // Phase 3: Trigger the AI Automation Service
     try {
-      const response = await axios.post('http://localhost:8000/agent/checkout', {
+      const response = await axios.post('https://ahmadhossan-florland-ai-agent.hf.space/agent/checkout', {
         items: currentItems.map(item => item.name),
         store: vendor.id,
         user_id: user?.id
       });
-      
+
       if (response.data.success) {
         setIsShoppingActive(true);
         window.open(vendor.affiliateUrl, '_blank');
@@ -1346,7 +1346,7 @@ const VoiceGroceryList = ({ user, logout }) => {
               {activeView === 'history' && <HistoryPage />}
 
               {/* Store Selection Modal */}
-              <StoreSelection 
+              <StoreSelection
                 open={isStoreSelectorOpen}
                 onClose={() => setIsStoreSelectorOpen(false)}
                 onVendorSelect={handleVendorSelect}
@@ -1357,10 +1357,10 @@ const VoiceGroceryList = ({ user, logout }) => {
               <ShoppingStatus active={isShoppingActive} />
 
               {/* Phase 4: Guided Handover Dialog */}
-              <HandoverDialog 
-                open={!!vendorForHandover} 
-                vendor={vendorForHandover} 
-                onConfirm={executeHandover} 
+              <HandoverDialog
+                open={!!vendorForHandover}
+                vendor={vendorForHandover}
+                onConfirm={executeHandover}
               />
             </>
           )}
