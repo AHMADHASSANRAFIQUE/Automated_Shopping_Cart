@@ -79,7 +79,7 @@ const ShoppingStatus = ({ active, onClose, items = [], vendor = null }) => {
         width: 360, 
         borderRadius: 4, 
         overflow: 'hidden',
-        zIndex: 1000,
+        zIndex: 2100,
         border: '1px solid',
         borderColor: 'primary.main',
         bgcolor: alpha(theme.palette.background.paper, 0.95),
@@ -98,7 +98,15 @@ const ShoppingStatus = ({ active, onClose, items = [], vendor = null }) => {
           <IconButton 
             size="small" 
             onClick={onClose}
-            sx={{ position: 'absolute', top: 12, right: 12, color: 'text.secondary' }}
+            sx={{ 
+              position: 'absolute', 
+              top: 10, 
+              right: 10, 
+              color: 'text.secondary',
+              bgcolor: alpha(theme.palette.background.paper, 0.8),
+              zIndex: 10,
+              '&:hover': { bgcolor: 'background.paper' }
+            }}
           >
             <X size={18} />
           </IconButton>
