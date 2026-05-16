@@ -16,8 +16,9 @@ AUTOMATION_STATUS = {
 }
 
 class InstacartAutomator:
-    def __init__(self, headless: bool = False):
+    def __init__(self, headless: bool = False, store: str = "instacart"):
         self.headless = headless
+        self.store = store
         self.browser = None
         self.context = None
         self.page = None
@@ -25,7 +26,7 @@ class InstacartAutomator:
 
     def start(self):
         """Initializes the browser with stealth-like settings."""
-        print("[AUTOMATOR] Initializing Professional Browser Session...")
+        print(f"[AUTOMATOR] Initializing Professional Browser Session for {self.store}...")
         self.playwright = sync_playwright().start()
         self.browser = self.playwright.chromium.launch(headless=self.headless)
         
@@ -40,7 +41,10 @@ class InstacartAutomator:
         self.page = self.context.new_page()
         
         # Inject stealth scripts or randomize behavior
-        self.page.goto("https://www.instacart.com/", wait_until="domcontentloaded")
+        if self.store == "walmart":
+            self.page.goto("https://www.walmart.com/", wait_until="domcontentloaded")
+        else:
+            self.page.goto("https://www.instacart.com/", wait_until="domcontentloaded")
         self._human_delay(2, 4)
         self.check_for_interruptions()
         self.handle_initial_popups()
@@ -102,16 +106,32 @@ class InstacartAutomator:
             # 1. Direct navigation to search catalog
             self.check_for_interruptions()
             encoded_query = urllib.parse.quote_plus(query)
-            search_url = f"https://www.instacart.com/store/s?k={encoded_query}"
+            if self.store == "walmart":
+                search_url = f"https://www.walmart.com/search?q={encoded_query}"
+            else:
+                search_url = f"https://www.instacart.com/store/s?k={encoded_query}"
             self.page.goto(search_url, wait_until="domcontentloaded", timeout=25000)
+            
+            # Wait for search results grid to render
+            try:
+                self.page.wait_for_selector('button:has-text("Add"), button:has-text("+"), [aria-label*="Add"], [aria-label*="add"], button', timeout=6000)
+            except Exception:
+                pass
             time.sleep(3)
             
             # 2. Add to Cart Logic
-            # We look for 'Add' or '+' buttons specifically for items
+            # Look for 'Add', '+', or 'Add to cart' buttons specifically for items
             add_selectors = [
                 'button:has-text("Add")', 
+                'button:has-text("+ Add")', 
+                'button:has-text("Add to cart")', 
                 'button[aria-label*="Add"]',
-                'button:has-text("+")'
+                'button[aria-label*="add"]',
+                'button[data-automation-id*="add"]',
+                'button[data-testid*="add"]',
+                'button:has-text("+")',
+                '[aria-label*="Add to cart"]',
+                '[aria-label*="Add"]'
             ]
             
             added = False
@@ -119,8 +139,11 @@ class InstacartAutomator:
                 first_btn = self.page.query_selector(selector)
                 if first_btn:
                     for _ in range(quantity):
-                        first_btn.click()
-                        time.sleep(0.8)
+                        try:
+                            first_btn.click(timeout=3000)
+                            time.sleep(1)
+                        except Exception:
+                            pass
                     added = True
                     break
             
