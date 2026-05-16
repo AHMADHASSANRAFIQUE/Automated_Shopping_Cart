@@ -54,7 +54,7 @@ def run_automation_task(items: List[str]):
         AUTOMATION_STATUS["logs"].append(f"AI parsed {len(specs)} items.")
         
         # 2. Automation
-        automator = InstacartAutomator(headless=False)
+        automator = InstacartAutomator(headless=True)
         automator.start()
         results = automator.process_shopping_list(specs)
         AUTOMATION_STATUS["logs"].append("Automation process complete.")
