@@ -12,7 +12,8 @@ import configRoutes from './routes/config.js';
 import sessionRoutes from './routes/sessions.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+// Hugging Face Spaces requires port 7860
+const PORT = process.env.SPACE_ID ? 7860 : (process.env.PORT || 3001);
 
 // Configure Express "trust proxy" to allow correct IP extraction behind proxies/load-balancers
 const defaultTrust = process.env.NODE_ENV === 'production' ? 'true' : 'false';
