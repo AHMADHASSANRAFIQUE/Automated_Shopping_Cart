@@ -433,7 +433,7 @@ const VoiceGroceryList = ({ user, logout }) => {
 
     // Phase 4: Persist the shopping session for history/analytics
     try {
-      await axios.post('http://localhost:3001/api/sessions', {
+      await axios.post('https://ahmadhossan-florland-voice-service.hf.space/api/sessions', {
         storeId: vendor.id,
         subStoreId: vendor.subStoreId || null,
         storeName: vendor.name,

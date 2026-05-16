@@ -110,7 +110,7 @@ const HistoryPage = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/api/sessions/history', {
+        const response = await axios.get('https://ahmadhossan-florland-voice-service.hf.space/api/sessions/history', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         if (response.data.success) {

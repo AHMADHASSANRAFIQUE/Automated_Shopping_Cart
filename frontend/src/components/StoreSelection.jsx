@@ -36,7 +36,7 @@ const StoreSelection = ({ open, onClose, onVendorSelect, itemCount }) => {
   useEffect(() => {
     const fetchVendors = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/api/config/vendors');
+        const response = await axios.get('https://ahmadhossan-florland-voice-service.hf.space/api/config/vendors');
         if (response.data.success) {
           setVendors(response.data.vendors);
         }
