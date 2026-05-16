@@ -452,7 +452,22 @@ const VoiceGroceryList = ({ user, logout }) => {
       console.error("⚠️ Failed to persist session history:", err);
     }
 
-    // Phase 3: Trigger the AI Automation Service
+    // Phase 3: Trigger the AI Automation Service & Dynamic Deep Linking
+    const getShoppableDeepLink = (vendorObj, itemsList) => {
+      if (!itemsList || itemsList.length === 0) return vendorObj.affiliateUrl;
+      const queryStr = itemsList.map(item => item.text).join(' ');
+      const encodedQuery = encodeURIComponent(queryStr);
+
+      if (vendorObj.id === 'walmart') {
+        return `https://www.walmart.com/search?q=${encodedQuery}`;
+      } else if (vendorObj.id === 'instacart') {
+        return `https://www.instacart.com/store/s?k=${encodedQuery}`;
+      }
+      return vendorObj.affiliateUrl;
+    };
+
+    const targetStoreUrl = getShoppableDeepLink(vendor, currentItems);
+
     try {
       const response = await axios.post('https://ahmadhossan-florland-ai-agent.hf.space/agent/checkout', {
         items: currentItems.map(item => item.text),
@@ -462,11 +477,11 @@ const VoiceGroceryList = ({ user, logout }) => {
 
       if (response.data.success) {
         setIsShoppingActive(true);
-        window.open(vendor.affiliateUrl, '_blank');
+        window.open(targetStoreUrl, '_blank');
       }
     } catch (error) {
       console.error("❌ Failed to trigger AI Agent:", error);
-      window.open(vendor.affiliateUrl, '_blank');
+      window.open(targetStoreUrl, '_blank');
     }
   };
 
