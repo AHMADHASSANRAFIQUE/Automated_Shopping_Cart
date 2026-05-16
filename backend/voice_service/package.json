@@ -26,7 +26,8 @@
     "nodemailer": "^7.0.9",
     "openai": "^4.74.1",
     "resend": "^6.1.2",
-    "sharp": "^0.34.4"
+    "sharp": "^0.34.4",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@types/supertest": "^6.0.3",
