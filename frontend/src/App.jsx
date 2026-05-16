@@ -122,7 +122,12 @@ const VoiceGroceryListApp = () => {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {authPage === 'landing' ? (
-          <LandingPage onGetStarted={() => setAuthPage('login')} />
+          <LandingPage 
+            onGetStarted={() => setAuthPage('login')} 
+            onHowItWorks={() => setAuthPage('help')} 
+          />
+        ) : authPage === 'help' ? (
+          <HelpPage onBack={() => setAuthPage('landing')} />
         ) : authPage === 'register' ? (
           <RegisterPage onSwitchToLogin={() => setAuthPage('login')} />
         ) : authPage === 'forgot-password' ? (

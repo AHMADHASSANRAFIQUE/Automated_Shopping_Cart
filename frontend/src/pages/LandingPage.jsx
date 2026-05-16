@@ -21,7 +21,7 @@ import {
   ChevronRight 
 } from 'lucide-react';
 
-const LandingPage = ({ onGetStarted }) => {
+const LandingPage = ({ onGetStarted, onHowItWorks }) => {
   const theme = useTheme();
 
   return (
@@ -93,6 +93,7 @@ const LandingPage = ({ onGetStarted }) => {
                   <Button 
                     variant="outlined" 
                     size="large" 
+                    onClick={onHowItWorks}
                     sx={{ px: 4, py: 2, borderRadius: 3, fontSize: '1.1rem' }}
                   >
                     How it Works
@@ -209,6 +210,7 @@ const Divider = () => <Box sx={{ height: '1px', bgcolor: 'divider', my: 2 }} />;
 
 LandingPage.propTypes = {
   onGetStarted: PropTypes.func.isRequired,
+  onHowItWorks: PropTypes.func.isRequired,
 };
 
 export default LandingPage;
