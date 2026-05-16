@@ -43,18 +43,18 @@ async def parse_list(request: ShoppingRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def run_automation_task(items: List[str]):
+def run_automation_task(items: List[str], store: str = "instacart"):
     try:
         # Update status
         AUTOMATION_STATUS["is_running"] = True
-        AUTOMATION_STATUS["logs"] = ["Starting AI intelligence..."]
+        AUTOMATION_STATUS["logs"] = [f"Starting AI intelligence for {store}..."]
         
         # 1. Intelligence
         specs = shopper.process_raw_list(items)
         AUTOMATION_STATUS["logs"].append(f"AI parsed {len(specs)} items.")
         
         # 2. Automation
-        automator = InstacartAutomator(headless=True)
+        automator = InstacartAutomator(headless=True, store=store)
         automator.start()
         results = automator.process_shopping_list(specs)
         AUTOMATION_STATUS["logs"].append("Automation process complete.")
@@ -68,7 +68,8 @@ async def start_checkout(request: ShoppingRequest, background_tasks: BackgroundT
     if not request.items:
         raise HTTPException(status_code=400, detail="No items to checkout")
         
-    background_tasks.add_task(run_automation_task, request.items)
+    store_name = request.store or "instacart"
+    background_tasks.add_task(run_automation_task, request.items, store_name)
     
     return {
         "success": True,
