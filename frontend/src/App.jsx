@@ -460,13 +460,13 @@ const VoiceGroceryList = ({ user, logout }) => {
     // Phase 3: Trigger the AI Automation Service & Dynamic Deep Linking
     const getShoppableDeepLink = (vendorObj, itemsList) => {
       if (!itemsList || itemsList.length === 0) return vendorObj.affiliateUrl;
-      const queryStr = itemsList.map(item => item.text).join(' ');
-      const encodedQuery = encodeURIComponent(queryStr);
+      // Use the first item for the initial search catalog view so the store doesn't combine unrelated products
+      const firstItemQuery = encodeURIComponent(itemsList[0].text);
 
       if (vendorObj.id === 'walmart') {
-        return `https://www.walmart.com/search?q=${encodedQuery}`;
+        return `https://www.walmart.com/search?q=${firstItemQuery}`;
       } else if (vendorObj.id === 'instacart') {
-        return `https://www.instacart.com/store/s?k=${encodedQuery}`;
+        return `https://www.instacart.com/store/s?k=${firstItemQuery}`;
       }
       return vendorObj.affiliateUrl;
     };
