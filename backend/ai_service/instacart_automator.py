@@ -111,13 +111,28 @@ class InstacartAutomator:
             else:
                 search_url = f"https://www.instacart.com/store/s?k={encoded_query}"
             self.page.goto(search_url, wait_until="domcontentloaded", timeout=25000)
+            time.sleep(3)
+            
+            # Check for bot challenge / verification prompts
+            title = self.page.title()
+            print(f"[AUTOMATOR] Loaded page title: '{title}'")
+            if any(term in title.lower() for term in ["verify", "robot", "human", "blocked", "challenge", "captcha", "security"]):
+                AUTOMATION_STATUS["requires_action"] = True
+                AUTOMATION_STATUS["action_type"] = "captcha"
+                AUTOMATION_STATUS["logs"].append(f"🚨 Bot verification required on {self.store.title()}!")
+            
+            # Scroll down to trigger lazy loading of product cards
+            try:
+                self.page.evaluate("window.scrollBy(0, 600)")
+            except Exception:
+                pass
+            time.sleep(2)
             
             # Wait for search results grid to render
             try:
-                self.page.wait_for_selector('button:has-text("Add"), button:has-text("+"), [aria-label*="Add"], [aria-label*="add"], button', timeout=6000)
+                self.page.wait_for_selector('button:has-text("Add"), button:has-text("+"), [aria-label*="Add"], [aria-label*="add"], button', timeout=5000)
             except Exception:
                 pass
-            time.sleep(3)
             
             # 2. Add to Cart Logic
             # Look for 'Add', '+', or 'Add to cart' buttons specifically for items
@@ -146,6 +161,23 @@ class InstacartAutomator:
                             pass
                     added = True
                     break
+            
+            # Fallback universal button scan
+            if not added:
+                all_buttons = self.page.query_selector_all('button, [role="button"], a[role="button"]')
+                for btn in all_buttons:
+                    try:
+                        inner = btn.inner_text() or ""
+                        aria = btn.get_attribute("aria-label") or ""
+                        combo_text = f"{inner} {aria}".lower()
+                        if "add" in combo_text or "+" in combo_text or "cart" in combo_text:
+                            for _ in range(quantity):
+                                btn.click(timeout=3000)
+                                time.sleep(1)
+                            added = True
+                            break
+                    except Exception:
+                        pass
             
             if added:
                 AUTOMATION_STATUS["logs"].append(f"✅ Successfully added {quantity}x {query}")
