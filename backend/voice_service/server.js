@@ -86,7 +86,14 @@ app.use('/api/receipts', receiptRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/sessions', sessionRoutes);
 
-// Health check endpoint
+// Health check endpoints
+app.get('/', (req, res) => {
+  res.json({
+    status: 'Florland Voice Service is Online',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -104,6 +111,6 @@ app.use((error, req, res, _next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT} (0.0.0.0)`);
 });
