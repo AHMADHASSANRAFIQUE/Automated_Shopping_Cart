@@ -27,7 +27,7 @@ import {
   Store, 
   ShoppingCart,
   ExternalLink,
-  History
+  History as HistoryIcon
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -129,7 +129,7 @@ const HistoryPage = () => {
     <Container maxWidth="md" sx={{ py: 6 }}>
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
         <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: 3 }}>
-          <History size={32} color={theme.palette.primary.main} />
+          <HistoryIcon size={32} color={theme.palette.primary.main} />
         </Box>
         <Box>
           <Typography variant="h4" fontWeight={900}>Shopping History</Typography>
