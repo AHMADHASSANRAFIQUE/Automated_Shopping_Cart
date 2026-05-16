@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { 
   Box, 
   Typography, 
@@ -9,6 +10,8 @@ import {
   ListItemIcon, 
   ListItemText,
   Chip,
+  Button,
+  IconButton,
   alpha,
   useTheme
 } from '@mui/material';
@@ -17,11 +20,14 @@ import {
   Loader2, 
   ShoppingCart, 
   BrainCircuit,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  X
 } from 'lucide-react';
 import axios from 'axios';
 
-const ShoppingStatus = ({ active }) => {
+const ShoppingStatus = ({ active, onClose, items = [], vendor = null }) => {
   const theme = useTheme();
   const [status, setStatus] = useState({
     is_running: false,
@@ -30,6 +36,7 @@ const ShoppingStatus = ({ active }) => {
     total_items: 0,
     logs: []
   });
+  const [activeItemIndex, setActiveItemIndex] = useState(0);
 
   useEffect(() => {
     let interval;
@@ -49,32 +56,55 @@ const ShoppingStatus = ({ active }) => {
     return () => clearInterval(interval);
   }, [active]);
 
+  const handleShopItem = (index) => {
+    if (!items || !items[index]) return;
+    setActiveItemIndex(index);
+    const itemText = items[index].text;
+    const encoded = encodeURIComponent(itemText);
+    const url = vendor?.id === 'walmart'
+      ? `https://www.walmart.com/search?q=${encoded}`
+      : `https://www.instacart.com/store/s?k=${encoded}`;
+    window.open(url, '_blank');
+  };
+
   if (!active && !status.is_running) return null;
 
   return (
     <Paper 
-      elevation={4}
+      elevation={6}
       sx={{ 
         position: 'fixed', 
         bottom: 24, 
         right: 24, 
-        width: 320, 
+        width: 360, 
         borderRadius: 4, 
         overflow: 'hidden',
         zIndex: 1000,
         border: '1px solid',
-        borderColor: 'divider',
+        borderColor: 'primary.main',
         bgcolor: alpha(theme.palette.background.paper, 0.95),
         backdropFilter: 'blur(10px)',
+        boxShadow: `0 12px 35px ${alpha(theme.palette.common.black, 0.3)}`
       }}
     >
       <Box sx={{ 
         p: 2, 
-        bgcolor: status.requires_action ? alpha(theme.palette.error.main, 0.1) : alpha(theme.palette.primary.main, 0.05), 
+        position: 'relative',
+        bgcolor: status.requires_action ? alpha(theme.palette.error.main, 0.1) : alpha(theme.palette.primary.main, 0.08), 
         borderBottom: '1px solid', 
         borderColor: status.requires_action ? 'error.main' : 'divider' 
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+        {onClose && (
+          <IconButton 
+            size="small" 
+            onClick={onClose}
+            sx={{ position: 'absolute', top: 12, right: 12, color: 'text.secondary' }}
+          >
+            <X size={18} />
+          </IconButton>
+        )}
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1, pr: 4 }}>
           {status.requires_action ? (
             <AlertCircle size={20} color={theme.palette.error.main} className="animate-pulse" />
           ) : status.is_running ? (
@@ -83,7 +113,7 @@ const ShoppingStatus = ({ active }) => {
             <CheckCircle2 size={20} color={theme.palette.success.main} />
           )}
           <Typography variant="subtitle1" fontWeight={700} color={status.requires_action ? 'error.main' : 'inherit'}>
-            {status.requires_action ? "Action Required!" : status.is_running ? "AI Agent Shopping..." : "Shopping Complete"}
+            {status.requires_action ? "Action Required!" : status.is_running ? "AI Agent Shopping..." : "Shopping Session Active"}
           </Typography>
         </Box>
         {status.requires_action && (
@@ -97,11 +127,70 @@ const ShoppingStatus = ({ active }) => {
           sx={{ height: 6, borderRadius: 3 }}
         />
         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-          {status.progress} of {status.total_items} items processed
+          {status.progress} of {status.total_items} items background processed
         </Typography>
       </Box>
 
-      <Box sx={{ p: 1, maxHeight: 200, overflowY: 'auto' }}>
+      {/* Step-by-Step Shopping Assistant Panel */}
+      {items && items.length > 0 && vendor && (
+        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: alpha(theme.palette.background.default, 0.6) }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ShoppingCart size={16} color={theme.palette.primary.main} />
+              Shopping Assistant ({activeItemIndex + 1}/{items.length})
+            </Typography>
+            <Chip 
+              label={vendor.name} 
+              size="small" 
+              sx={{ bgcolor: 'primary.main', color: 'white', fontWeight: 700, fontSize: '0.7rem' }} 
+            />
+          </Box>
+
+          <Paper variant="outlined" sx={{ p: 1.5, mb: 1.5, borderRadius: 2, bgcolor: 'background.paper', borderColor: 'primary.light' }}>
+            <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+              CURRENT ITEM TO ADD:
+            </Typography>
+            <Typography variant="body1" fontWeight={800} color="primary.main">
+              {items[activeItemIndex]?.text}
+            </Typography>
+          </Paper>
+
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={activeItemIndex === 0}
+              onClick={() => handleShopItem(activeItemIndex - 1)}
+              sx={{ minWidth: 40, px: 1, borderRadius: 2 }}
+              title="Previous Item"
+            >
+              <ArrowLeft size={16} />
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              fullWidth
+              onClick={() => handleShopItem(activeItemIndex)}
+              sx={{ borderRadius: 2, fontWeight: 700, py: 1, boxShadow: 2 }}
+            >
+              Shop Item on {vendor.name}
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              size="small"
+              disabled={activeItemIndex >= items.length - 1}
+              onClick={() => handleShopItem(activeItemIndex + 1)}
+              sx={{ minWidth: 40, px: 1, borderRadius: 2 }}
+              title="Next Item"
+            >
+              <ArrowRight size={16} />
+            </Button>
+          </Box>
+        </Box>
+      )}
+
+      <Box sx={{ p: 1, maxHeight: 150, overflowY: 'auto' }}>
         <List dense>
           {status.logs.slice(-5).map((log, index) => (
             <ListItem key={index}>
@@ -118,19 +207,15 @@ const ShoppingStatus = ({ active }) => {
           ))}
         </List>
       </Box>
-      
-      {status.current_item && status.is_running && (
-        <Box sx={{ p: 1.5, textAlign: 'center', borderTop: '1px solid', borderColor: 'divider' }}>
-          <Chip 
-            label={`Searching: ${status.current_item}`} 
-            size="small" 
-            variant="outlined" 
-            sx={{ fontWeight: 600 }}
-          />
-        </Box>
-      )}
     </Paper>
   );
+};
+
+ShoppingStatus.propTypes = {
+  active: PropTypes.bool.isRequired,
+  onClose: PropTypes.func,
+  items: PropTypes.array,
+  vendor: PropTypes.object
 };
 
 export default ShoppingStatus;

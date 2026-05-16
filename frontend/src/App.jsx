@@ -185,6 +185,7 @@ const VoiceGroceryList = ({ user, logout }) => {
   const [isStoreSelectorOpen, setIsStoreSelectorOpen] = useState(false);
   const [isShoppingActive, setIsShoppingActive] = useState(false);
   const [vendorForHandover, setVendorForHandover] = useState(null);
+  const [activeVendor, setActiveVendor] = useState(null);
 
   // Ref for the printable list component
   const printableListRef = useRef(null);
@@ -435,6 +436,7 @@ const VoiceGroceryList = ({ user, logout }) => {
   const executeHandover = async () => {
     const vendor = vendorForHandover;
     setVendorForHandover(null);
+    setActiveVendor(vendor);
 
     console.log(`🚀 Executing Handover for ${vendor.name}...`);
 
@@ -1375,8 +1377,13 @@ const VoiceGroceryList = ({ user, logout }) => {
                 itemCount={currentItems.length}
               />
 
-              {/* Real-time Shopping Status Widget */}
-              <ShoppingStatus active={isShoppingActive} />
+              {/* Real-time Shopping Status & Assistant Widget */}
+              <ShoppingStatus 
+                active={isShoppingActive} 
+                onClose={() => { setIsShoppingActive(false); setActiveVendor(null); }} 
+                items={currentItems} 
+                vendor={activeVendor} 
+              />
 
               {/* Phase 4: Guided Handover Dialog */}
               <HandoverDialog
