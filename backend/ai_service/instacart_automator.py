@@ -30,12 +30,18 @@ class InstacartAutomator:
         self.playwright = sync_playwright().start()
         self.browser = self.playwright.chromium.launch(
             headless=self.headless,
+            chromium_sandbox=False,
+            ignore_default_args=["--enable-automation"],
             args=[
                 '--disable-blink-features=AutomationControlled',
-                '--disable-infobars',
+                '--disable-popup-blocking',
+                '--disable-notifications',
+                '--disable-web-security',
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
-                '--window-size=1280,800',
+                '--disable-gpu',
+                '--disable-dev-shm-usage',
+                '--window-size=1920,1080',
                 '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
             ]
         )
@@ -60,20 +66,31 @@ class InstacartAutomator:
         )
         self.page = self.context.new_page()
         
-        # Inject stealth scripts to bypass navigator.webdriver detection
+        # Inject ultimate stealth scripts to mask navigator and hardware fingerprints
         self.page.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => undefined
-            });
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+            window.chrome = { runtime: {} };
         """)
+        
+        # Warmup session via Google Organic Search
+        try:
+            self.page.goto("https://www.google.com", wait_until="domcontentloaded", timeout=15000)
+            time.sleep(1)
+        except Exception:
+            pass
         
         if self.store == "walmart":
             try:
-                self.page.goto("https://www.walmart.com/", wait_until="domcontentloaded", timeout=20000)
+                self.page.goto("https://www.walmart.com/", wait_until="domcontentloaded", timeout=25000, referer="https://www.google.com/")
             except Exception:
                 pass
         else:
-            self.page.goto("https://www.instacart.com/", wait_until="domcontentloaded")
+            try:
+                self.page.goto("https://www.instacart.com/", wait_until="domcontentloaded", timeout=25000, referer="https://www.google.com/")
+            except Exception:
+                pass
         self._human_delay(2, 4)
         self.check_for_interruptions()
         self.handle_initial_popups()
@@ -139,7 +156,7 @@ class InstacartAutomator:
                 search_url = f"https://www.walmart.com/search?q={encoded_query}"
             else:
                 search_url = f"https://www.instacart.com/store/s?k={encoded_query}"
-            self.page.goto(search_url, wait_until="domcontentloaded", timeout=25000)
+            self.page.goto(search_url, wait_until="domcontentloaded", timeout=25000, referer="https://www.google.com/")
             time.sleep(3)
             
             # Check for bot challenge / verification prompts
