@@ -194,6 +194,7 @@ const VoiceGroceryList = ({ user, logout }) => {
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
   const isReceiptsView = activeView === 'receipts';
+  const isHistoryOrReceiptsView = activeView === 'receipts' || activeView === 'history';
 
   // Use the custom hook for grocery list management
   const {
@@ -816,7 +817,7 @@ const VoiceGroceryList = ({ user, logout }) => {
             }}
           >
             <Toolbar sx={{ minHeight: '72px', px: { xs: 1, sm: 3 } }}>
-              {isMobile && !isReceiptsView && (
+              {isMobile && !isHistoryOrReceiptsView && (
                 <IconButton
                   color="inherit"
                   edge="start"
@@ -884,7 +885,7 @@ const VoiceGroceryList = ({ user, logout }) => {
               <Box sx={{ flexGrow: 1 }} />
 
               {/* Current Date Badge */}
-              {!isReceiptsView && (
+              {!isHistoryOrReceiptsView && (
                 <Chip
                   label={formatDateDisplay(currentDateString)}
                   variant="outlined"
@@ -1101,7 +1102,7 @@ const VoiceGroceryList = ({ user, logout }) => {
           </AppBar>
 
           {/* Navigation Drawer */}
-          {!isReceiptsView && (
+          {!isHistoryOrReceiptsView && (
             !isMobile ? (
               <Drawer
                 variant="permanent"
@@ -1147,8 +1148,10 @@ const VoiceGroceryList = ({ user, logout }) => {
 
             <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3, md: 4 }, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ flexGrow: 1, width: '100%' }}>
-                {isReceiptsView ? (
+                {activeView === 'receipts' ? (
                   <ReceiptsPage user={user} />
+                ) : activeView === 'history' ? (
+                  <HistoryPage />
                 ) : (
                   <>
                     {/* Loading Indicator */}
@@ -1348,7 +1351,7 @@ const VoiceGroceryList = ({ user, logout }) => {
             </Container>
           </Box>
 
-          {!isReceiptsView && (
+          {!isHistoryOrReceiptsView && (
             <>
               {/* Hidden Printable List Component for Export */}
               <Box sx={{ position: 'absolute', left: '-9999px', top: 0 }}>
@@ -1366,8 +1369,6 @@ const VoiceGroceryList = ({ user, logout }) => {
                 onItemsDetected={handleVoiceItems}
                 disabled={loading || currentDate.isBefore(dayjs().startOf('day'))}
               />
-              {activeView === 'receipts' && <ReceiptsPage />}
-              {activeView === 'history' && <HistoryPage />}
 
               {/* Store Selection Modal */}
               <StoreSelection
