@@ -226,6 +226,8 @@ class InstacartAutomator:
                         pass
             
             if added:
+                AUTOMATION_STATUS["requires_action"] = False
+                AUTOMATION_STATUS["action_type"] = None
                 AUTOMATION_STATUS["logs"].append(f"✅ Successfully added {quantity}x {query}")
                 return True
             else:
@@ -238,6 +240,8 @@ class InstacartAutomator:
 
     def process_shopping_list(self, items: List[Dict]):
         AUTOMATION_STATUS["is_running"] = True
+        AUTOMATION_STATUS["requires_action"] = False
+        AUTOMATION_STATUS["action_type"] = None
         AUTOMATION_STATUS["total_items"] = len(items)
         AUTOMATION_STATUS["progress"] = 0
         AUTOMATION_STATUS["logs"] = []
@@ -249,6 +253,8 @@ class InstacartAutomator:
             results.append({"item": item['original_text'], "success": success})
         
         AUTOMATION_STATUS["is_running"] = False
+        AUTOMATION_STATUS["requires_action"] = False
+        AUTOMATION_STATUS["action_type"] = None
         AUTOMATION_STATUS["current_item"] = "Finished"
         return results
 
