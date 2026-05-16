@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 import os
 from dotenv import load_dotenv
+import threading
 from intelligent_shopper import IntelligentShopper
 from instacart_automator import InstacartAutomator, AUTOMATION_STATUS
 
@@ -43,7 +44,7 @@ async def parse_list(request: ShoppingRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def run_automation_task(items: List[str], store: str = "instacart"):
+def _automation_worker(items: List[str], store: str):
     try:
         # Update status
         AUTOMATION_STATUS["is_running"] = True
@@ -58,10 +59,15 @@ def run_automation_task(items: List[str], store: str = "instacart"):
         automator.start()
         results = automator.process_shopping_list(specs)
         AUTOMATION_STATUS["logs"].append("Automation process complete.")
-        # automator.stop()
+        automator.stop()
     except Exception as e:
         AUTOMATION_STATUS["is_running"] = False
         AUTOMATION_STATUS["logs"].append(f"Error: {str(e)}")
+
+def run_automation_task(items: List[str], store: str = "instacart"):
+    # Run in a separate OS thread to guarantee isolation from FastAPI's asyncio event loop
+    thread = threading.Thread(target=_automation_worker, args=(items, store), daemon=True)
+    thread.start()
 
 @app.post("/agent/checkout")
 async def start_checkout(request: ShoppingRequest, background_tasks: BackgroundTasks):
