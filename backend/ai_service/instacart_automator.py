@@ -1,4 +1,5 @@
 import time
+import urllib.parse
 from playwright.sync_api import sync_playwright, Page
 from typing import List, Dict
 import os
@@ -98,17 +99,12 @@ class InstacartAutomator:
         print(f"[AUTOMATOR] Action: Searching for {query}")
         
         try:
-            # 1. Clear and fill search bar
+            # 1. Direct navigation to search catalog
             self.check_for_interruptions()
-            search_selector = 'input[type="search"], input[placeholder*="Search"]'
-            self.page.wait_for_selector(search_selector, timeout=10000)
-            self.page.fill(search_selector, "")
-            self.page.fill(search_selector, query)
-            self.page.keyboard.press("Enter")
-            
-            # Wait for search results
-            self.page.wait_for_load_state("networkidle")
-            time.sleep(2)
+            encoded_query = urllib.parse.quote_plus(query)
+            search_url = f"https://www.instacart.com/store/s?k={encoded_query}"
+            self.page.goto(search_url, wait_until="domcontentloaded", timeout=25000)
+            time.sleep(3)
             
             # 2. Add to Cart Logic
             # We look for 'Add' or '+' buttons specifically for items
