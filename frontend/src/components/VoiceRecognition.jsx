@@ -33,7 +33,9 @@ const VoiceRecognition = memo(({ onItemsDetected, disabled = false }) => {
       'like', 'you know', 'i mean', 'basically', 'actually', 'literally', 'really', 'just', 'maybe',
       'i think', 'i guess', 'sort of', 'kind of', 'kinda', 'sorta',
       // Commands already handled in prefixes but adding for safety
-      'get', 'buy', 'pick', 'grab', 'take', 'find',
+      'get', 'buy', 'pick', 'grab', 'take', 'find', 'add', 'put', 'some',
+      // Shopping context words
+      'in', 'to', 'into', 'the', 'cart', 'basket', 'list', 'grocery', 'item', 'items', 'for', 'shopping',
       // Politeness words
       'please', 'thanks', 'thank you', 'thanks a lot', 'thank you very much',
       // Time/sequence words that aren't separators
@@ -42,8 +44,11 @@ const VoiceRecognition = memo(({ onItemsDetected, disabled = false }) => {
 
     let cleaned = text.toLowerCase();
 
+    // Remove common shopping conversational phrases
+    cleaned = cleaned.replace(/\b(in the cart|in my cart|in cart|to the cart|to my cart|to cart|into the cart|on the list|on my list|in my basket|for shopping|add to cart|add to list|add in cart|add in list|add some|put in|put some)\b/gi, '');
+
     // Remove common speech prefixes
-    cleaned = cleaned.replace(/^(i need|get me|buy|pick up|add|i want|get|grab|find|take)\s*/i, '');
+    cleaned = cleaned.replace(/^(i need|get me|buy|pick up|add|i want|get|grab|find|take|put)\s*/i, '');
 
     // Remove common speech suffixes
     cleaned = cleaned.replace(/\s*(please|thanks|thank you|thanks a lot|thank you very much)$/i, '');
@@ -117,6 +122,19 @@ const VoiceRecognition = memo(({ onItemsDetected, disabled = false }) => {
       // If no separators found, try intelligent space-based splitting
       items = intelligentWordSplit(cleanedText);
     }
+
+    // Merge standalone quantity/number words with the following item (e.g., "two", "apples" => "two apples")
+    const quantityRegex = /^(one|two|three|four|five|six|seven|eight|nine|ten|\d+.*)$/i;
+    const mergedItems = [];
+    for (let i = 0; i < items.length; i++) {
+      if (i < items.length - 1 && quantityRegex.test(items[i].trim())) {
+        mergedItems.push(`${items[i].trim()} ${items[i + 1].trim()}`);
+        i++; // skip next item since it's merged
+      } else {
+        mergedItems.push(items[i].trim());
+      }
+    }
+    items = mergedItems;
 
     // Final cleanup of items
     items = items
