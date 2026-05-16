@@ -440,7 +440,7 @@ const VoiceGroceryList = ({ user, logout }) => {
         subStoreId: vendor.subStoreId || null,
         storeName: vendor.name,
         items: currentItems.map(item => ({
-          name: item.name,
+          name: item.text,
           category: item.category,
           count: item.count
         })),
@@ -455,9 +455,9 @@ const VoiceGroceryList = ({ user, logout }) => {
     // Phase 3: Trigger the AI Automation Service
     try {
       const response = await axios.post('https://ahmadhossan-florland-ai-agent.hf.space/agent/checkout', {
-        items: currentItems.map(item => item.name),
+        items: currentItems.map(item => item.text),
         store: vendor.id,
-        user_id: user?.id
+        user_id: user?._id || null
       });
 
       if (response.data.success) {
