@@ -28,21 +28,50 @@ class InstacartAutomator:
         """Initializes the browser with stealth-like settings."""
         print(f"[AUTOMATOR] Initializing Professional Browser Session for {self.store}...")
         self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=self.headless)
+        self.browser = self.playwright.chromium.launch(
+            headless=self.headless,
+            args=[
+                '--disable-blink-features=AutomationControlled',
+                '--disable-infobars',
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--window-size=1280,800',
+                '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+            ]
+        )
         
         # Professional Stealth Configuration
         self.context = self.browser.new_context(
             viewport={'width': 1280 + self._get_random_offset(), 'height': 800 + self._get_random_offset()},
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             color_scheme='light',
             locale='en-US',
-            timezone_id='America/New_York'
+            timezone_id='America/New_York',
+            extra_http_headers={
+                'sec-ch-ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1'
+            }
         )
         self.page = self.context.new_page()
         
-        # Inject stealth scripts or randomize behavior
+        # Inject stealth scripts to bypass navigator.webdriver detection
+        self.page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+        """)
+        
         if self.store == "walmart":
-            self.page.goto("https://www.walmart.com/", wait_until="domcontentloaded")
+            try:
+                self.page.goto("https://www.walmart.com/", wait_until="domcontentloaded", timeout=20000)
+            except Exception:
+                pass
         else:
             self.page.goto("https://www.instacart.com/", wait_until="domcontentloaded")
         self._human_delay(2, 4)
