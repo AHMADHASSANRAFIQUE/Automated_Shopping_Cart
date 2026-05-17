@@ -13,24 +13,8 @@ const Footer = () => {
         backgroundColor: 'transparent',
       }}
     >
-      <Typography variant="body2" color="text.secondary">
-        © 2025 Grocery List App. Built by{' '}
-        <Link
-          href="https://github.com/surajfale"
-          target="_blank"
-          rel="noopener noreferrer"
-          sx={{
-            color: 'primary.main',
-            textDecoration: 'none',
-            fontWeight: 500,
-            '&:hover': {
-              textDecoration: 'underline',
-            },
-          }}
-        >
-          Suraj
-        </Link>
-        {' '}with React + Material UI.
+      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+        © {new Date().getFullYear()} 247OrderBay. Powered by Advanced AI Voice Intelligence & Automated E-Commerce.
       </Typography>
     </Box>
   );
