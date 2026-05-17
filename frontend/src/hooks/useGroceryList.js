@@ -5,6 +5,24 @@ import groceryIntelligence from '../services/groceryIntelligence.js';
 import logger from '../utils/logger.js';
 import useErrorHandler from './useErrorHandler.js';
 
+const extractQuantityAndText = (rawText) => {
+  if (!rawText) return { count: 1, cleanText: '' };
+  const str = rawText.trim();
+  const numMatch = str.match(/^(\d+)\s+(.+)$/);
+  if (numMatch) {
+    const cnt = parseInt(numMatch[1], 10);
+    return { count: cnt > 0 ? cnt : 1, cleanText: numMatch[2].trim() };
+  }
+  const wordMap = { 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10 };
+  const parts = str.split(/\s+/);
+  if (parts.length > 1 && wordMap[parts[0].toLowerCase()]) {
+    const cnt = wordMap[parts[0].toLowerCase()];
+    const clean = parts.slice(1).join(' ').trim();
+    return { count: cnt, cleanText: clean };
+  }
+  return { count: 1, cleanText: str };
+};
+
 export const useGroceryList = (user) => {
   const [allLists, setAllLists] = useState({});
   const [currentDate, setCurrentDate] = useState(() => {
@@ -32,7 +50,9 @@ export const useGroceryList = (user) => {
 
   // Check for duplicates
   const isDuplicate = useCallback((itemText) => {
+    const { cleanText } = extractQuantityAndText(itemText);
     return currentItems.some(item =>
+      item.text.toLowerCase().trim() === cleanText.toLowerCase().trim() ||
       item.text.toLowerCase().trim() === itemText.toLowerCase().trim()
     );
   }, [currentItems]);
@@ -83,11 +103,12 @@ export const useGroceryList = (user) => {
           continue;
         }
 
+        const { count, cleanText } = extractQuantityAndText(finalText);
         const itemData = {
-          text: finalText,
+          text: cleanText,
           category: processed.category,
           completed: false,
-          count: 1
+          count: count
         };
 
         const result = await apiStorage.addGroceryItem(user._id, currentDateString, itemData);
@@ -132,10 +153,12 @@ export const useGroceryList = (user) => {
           continue;
         }
 
+        const { count, cleanText } = extractQuantityAndText(correction.corrected);
         const itemData = {
-          text: correction.corrected,
+          text: cleanText,
           category: correction.category,
-          completed: false
+          completed: false,
+          count: count
         };
 
         const result = await apiStorage.addGroceryItem(user._id, currentDateString, itemData);
@@ -170,10 +193,12 @@ export const useGroceryList = (user) => {
 
         // Process the original item without correction
         const processed = processGroceryItem(correction.original);
+        const { count, cleanText } = extractQuantityAndText(correction.original);
         const itemData = {
-          text: correction.original, // Use original text, not corrected
+          text: cleanText, // Use extracted clean text
           category: processed.category, // But use intelligent categorization
-          completed: false
+          completed: false,
+          count: count
         };
 
         const result = await apiStorage.addGroceryItem(user._id, currentDateString, itemData);
