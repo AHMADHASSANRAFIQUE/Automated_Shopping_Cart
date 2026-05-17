@@ -14,7 +14,21 @@ const Footer = () => {
       }}
     >
       <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-        © {new Date().getFullYear()} 247OrderBay. Powered by Advanced AI Voice Intelligence & Automated E-Commerce.
+        © {new Date().getFullYear()} 247OrderBay. Built by{' '}
+        <Link
+          href="https://github.com/AHMADHASSANRAFIQUE"
+          target="_blank"
+          rel="noopener noreferrer"
+          sx={{
+            color: 'primary.main',
+            textDecoration: 'none',
+            fontWeight: 700,
+            '&:hover': { textDecoration: 'underline' }
+          }}
+        >
+          Ahmad Hassan Rafique
+        </Link>
+        {' '}with Advanced AI Voice Intelligence.
       </Typography>
     </Box>
   );
