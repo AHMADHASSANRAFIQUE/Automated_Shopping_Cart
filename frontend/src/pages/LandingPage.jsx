@@ -50,7 +50,7 @@ const LandingPage = ({ onGetStarted, onHowItWorks }) => {
                     display: 'block'
                   }}
                 >
-                  INTRODUCING FLORLAND
+                  INTRODUCING ORDERBAY
                 </Typography>
                 <Typography 
                   variant="h1" 
@@ -66,7 +66,7 @@ const LandingPage = ({ onGetStarted, onHowItWorks }) => {
                   }}
                 >
                   Your Grocery Shopping, <br />
-                  <span style={{ color: theme.palette.primary.main }}>Fully Automated.</span>
+                  <span style={{ color: theme.palette.primary.main }}>Online Assistant.</span>
                 </Typography>
                 <Typography 
                   variant="h5" 
@@ -88,7 +88,7 @@ const LandingPage = ({ onGetStarted, onHowItWorks }) => {
                       boxShadow: `0 8px 25px ${alpha(theme.palette.primary.main, 0.4)}`
                     }}
                   >
-                    Start Shopping Now
+                    Upload Shopping List
                   </Button>
                   <Button 
                     variant="outlined" 

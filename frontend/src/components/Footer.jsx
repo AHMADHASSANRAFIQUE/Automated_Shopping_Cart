@@ -14,7 +14,7 @@ const Footer = () => {
       }}
     >
       <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-        © {new Date().getFullYear()} 247OrderBay. Built by{' '}
+        © 2026 OrderBay Shopping Network. Built by{' '}
         <Link
           href="https://github.com/AHMADHASSANRAFIQUE"
           target="_blank"

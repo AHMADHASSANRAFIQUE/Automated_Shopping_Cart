@@ -866,7 +866,7 @@ const VoiceGroceryList = ({ user, logout }) => {
                       lineHeight: 1.2,
                     }}
                   >
-                    Florland
+                    OrderBay
                   </Typography>
                   <Typography
                     variant="caption"
@@ -877,7 +877,7 @@ const VoiceGroceryList = ({ user, logout }) => {
                       display: { xs: 'none', sm: 'block' }
                     }}
                   >
-                    AI Grocery Assistant
+                    AI Shopping Assistant
                   </Typography>
                 </Box>
               </Box>
