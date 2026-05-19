@@ -198,6 +198,7 @@ const VoiceGroceryList = ({ user, logout }) => {
   const [isShoppingActive, setIsShoppingActive] = useState(false);
   const [vendorForHandover, setVendorForHandover] = useState(null);
   const [activeVendor, setActiveVendor] = useState(null);
+  const [simulatedSearchText, setSimulatedSearchText] = useState('');
 
   // Ref for the printable list component
   const printableListRef = useRef(null);
@@ -1205,6 +1206,7 @@ const VoiceGroceryList = ({ user, logout }) => {
                       historicalItems={historicalItems}
                       loading={loading}
                       disabled={currentDate.isBefore(dayjs().startOf('day'))}
+                      externalInputValue={simulatedSearchText}
                     />
 
                     {/* List Stats and Controls */}
@@ -1413,6 +1415,7 @@ const VoiceGroceryList = ({ user, logout }) => {
                 onAddItem={(items) => addItemsToList(items)}
                 onSelectVendor={handleVendorSelect}
                 onTriggerCheckout={executeHandover}
+                onTypingSimulated={setSimulatedSearchText}
               />
             </>
           )}

@@ -52,6 +52,7 @@ const VoiceChatBox = ({
   onSelectVendor,
   onTriggerCheckout,
   onAuthRedirect,
+  onTypingSimulated,
 }) => {
   const theme = useTheme();
   const [chatState, setChatState] = useState(STATES.INIT);
@@ -167,6 +168,13 @@ const VoiceChatBox = ({
     const cleanInput = input.trim().toLowerCase();
     addMessage(input, 'user');
     setInputText('');
+
+    if (stateRef.current === STATES.GROCERY_LOOP && onTypingSimulated) {
+      onTypingSimulated(inputToCleanText(input));
+      setTimeout(() => {
+        onTypingSimulated('');
+      }, 2500);
+    }
 
     setTimeout(() => {
       processDialogue(cleanInput);
@@ -568,6 +576,7 @@ VoiceChatBox.propTypes = {
   onSelectVendor: PropTypes.func,
   onTriggerCheckout: PropTypes.func,
   onAuthRedirect: PropTypes.func,
+  onTypingSimulated: PropTypes.func,
 };
 
 export default VoiceChatBox;

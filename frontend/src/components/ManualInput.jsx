@@ -13,9 +13,15 @@ import {
 import { Add } from '@mui/icons-material';
 import Fuse from 'fuse.js';
 
-const ManualInput = memo(({ onAddItems, historicalItems = [], loading = false, disabled = false }) => {
+const ManualInput = memo(({ onAddItems, historicalItems = [], loading = false, disabled = false, externalInputValue }) => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [inputValue, setInputValue] = useState('');
+
+  React.useEffect(() => {
+    if (externalInputValue !== undefined && externalInputValue !== null) {
+      setInputValue(externalInputValue);
+    }
+  }, [externalInputValue]);
 
   const fuse = useMemo(() => new Fuse(historicalItems, {
     threshold: 0.3,
@@ -185,7 +191,8 @@ ManualInput.propTypes = {
   onAddItems: PropTypes.func.isRequired,
   historicalItems: PropTypes.arrayOf(PropTypes.string),
   loading: PropTypes.bool,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
+  externalInputValue: PropTypes.string,
 };
 
 export default ManualInput;
