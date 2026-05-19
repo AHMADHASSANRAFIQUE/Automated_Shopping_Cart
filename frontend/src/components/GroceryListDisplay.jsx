@@ -101,7 +101,7 @@ const GroceryListDisplay = memo(({
     <Grid container spacing={3}>
       {processedGroupedItems.map(({ category, categoryItems, isExpanded, completedCount, progress }) => {
         return (
-          <Grid item xs={12} md={6} key={category}>
+          <Grid item xs={12} key={category}>
             <Card
               sx={{
                 height: 'fit-content',
@@ -305,7 +305,7 @@ const GroceryListDisplay = memo(({
                           ×{item.count || 1}
                         </Box>
 
-                        <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                        <Box sx={{ flex: 1, minWidth: '80px', overflow: 'hidden' }}>
                           {editingText === item.id ? (
                             <TextField
                               value={editedTextValue}
