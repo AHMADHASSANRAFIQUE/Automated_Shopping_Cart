@@ -82,6 +82,7 @@ import HistoryPage from './pages/HistoryPage';
 import StoreSelection from './components/StoreSelection';
 import ShoppingStatus from './components/ShoppingStatus';
 import HandoverDialog from './components/HandoverDialog';
+import VoiceChatBox from './components/VoiceChatBox';
 import { useGroceryList } from './hooks/useGroceryList';
 import groceryIntelligence from './services/groceryIntelligence';
 import { downloadListAsImage, downloadListAsPDF, shareList } from './utils/downloadList';
@@ -121,33 +122,44 @@ const VoiceGroceryListApp = () => {
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {authPage === 'landing' ? (
-          <LandingPage 
-            onGetStarted={() => setAuthPage('login')} 
-            onHowItWorks={() => setAuthPage('help')} 
-          />
-        ) : authPage === 'help' ? (
-          <HelpPage onBack={() => setAuthPage('landing')} />
-        ) : authPage === 'register' ? (
-          <RegisterPage onSwitchToLogin={() => setAuthPage('login')} />
-        ) : authPage === 'forgot-password' ? (
-          <ForgotPasswordPage onBackToLogin={() => setAuthPage('login')} />
-        ) : authPage === 'reset-password' ? (
-          <ResetPasswordPage
-            token={resetToken}
-            onBackToLogin={() => {
-              setAuthPage('login');
-              setResetToken('');
-              // Clear URL params
-              window.history.replaceState({}, document.title, window.location.pathname);
-            }}
-          />
-        ) : (
-          <LoginPage
-            onSwitchToRegister={() => setAuthPage('register')}
-            onSwitchToForgotPassword={() => setAuthPage('forgot-password')}
-          />
-        )}
+        <Box sx={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+          <Box sx={{ flexGrow: 1, pr: { xs: 0, lg: '400px' }, width: '100%' }}>
+            {authPage === 'landing' ? (
+              <LandingPage 
+                onGetStarted={() => setAuthPage('login')} 
+                onHowItWorks={() => setAuthPage('help')} 
+              />
+            ) : authPage === 'help' ? (
+              <HelpPage onBack={() => setAuthPage('landing')} />
+            ) : authPage === 'register' ? (
+              <RegisterPage onSwitchToLogin={() => setAuthPage('login')} />
+            ) : authPage === 'forgot-password' ? (
+              <ForgotPasswordPage onBackToLogin={() => setAuthPage('login')} />
+            ) : authPage === 'reset-password' ? (
+              <ResetPasswordPage
+                token={resetToken}
+                onBackToLogin={() => {
+                  setAuthPage('login');
+                  setResetToken('');
+                  // Clear URL params
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                }}
+              />
+            ) : (
+              <LoginPage
+                onSwitchToRegister={() => setAuthPage('register')}
+                onSwitchToForgotPassword={() => setAuthPage('forgot-password')}
+              />
+            )}
+          </Box>
+          
+          {(authPage === 'landing' || authPage === 'help') && (
+            <VoiceChatBox 
+              user={null}
+              onAuthRedirect={() => setAuthPage('login')}
+            />
+          )}
+        </Box>
       </ThemeProvider>
     );
   }
@@ -1140,6 +1152,7 @@ const VoiceGroceryList = ({ user, logout }) => {
               display: 'flex',
               flexDirection: 'column',
               p: { xs: 2, sm: 3, md: 4 },
+              pr: { xs: 2, sm: 3, lg: '420px' }, // Space for VoiceChatBox
               minHeight: '100vh',
               background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)',
             }}
@@ -1386,11 +1399,20 @@ const VoiceGroceryList = ({ user, logout }) => {
                 vendor={activeVendor} 
               />
 
-              {/* Phase 4: Guided Handover Dialog */}
+              {/* Guided Handover Dialog */}
               <HandoverDialog
                 open={!!vendorForHandover}
                 vendor={vendorForHandover}
                 onConfirm={executeHandover}
+              />
+
+              {/* Conversational Voice Chatbox Panel */}
+              <VoiceChatBox
+                user={user}
+                currentItems={currentItems}
+                onAddItem={(items) => addItemsToList(items)}
+                onSelectVendor={handleVendorSelect}
+                onTriggerCheckout={executeHandover}
               />
             </>
           )}
