@@ -75,7 +75,7 @@ const ShoppingStatus = ({ active, onClose, items = [], vendor = null }) => {
       sx={{ 
         position: 'fixed', 
         bottom: 24, 
-        right: 24, 
+        right: { xs: 24, lg: 420 }, // Shift to the left of VoiceChatBox on desktop to prevent overlaps
         width: 360, 
         borderRadius: 4, 
         overflow: 'hidden',
